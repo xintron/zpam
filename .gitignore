@@ -4,6 +4,8 @@
 *.so
 
 # Folders
+examples
+vendor
 _obj
 _test
 

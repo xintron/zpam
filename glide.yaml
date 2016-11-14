@@ -1,0 +1,5 @@
+package: github.com/xintron/zpam
+import:
+- package: github.com/daneharrigan/hipchat
+- package: github.com/thoj/go-ircevent
+  version: ^0.1.0
