@@ -53,7 +53,8 @@ func New(c *zpam.Client) zpam.Backend {
 		})
 	})
 	go conn.Loop()
-	return &backend{connection: conn}
+	Config.connection = conn
+	return &Config
 }
 
 func (i *backend) Send(to string, msg *zpam.Message) {
