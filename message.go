@@ -4,5 +4,7 @@ package zpam
 //
 // A message needs to be able to be used bidirectionally.
 type Message struct {
+	From string
+	To   string
 	Text string
 }

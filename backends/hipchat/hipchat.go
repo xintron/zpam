@@ -1,37 +1,51 @@
-package hipchat
+package backends
 
 import (
+	"strings"
+
 	"github.com/daneharrigan/hipchat"
+	"github.com/vrischmann/envconfig"
 	"github.com/xintron/zpam"
 )
 
 func init() {
-	zpam.RegisterBackend("hipchat", New)
+	zpam.RegisterBackend("hipchat", newHipchat)
 }
 
-// Config allows the bot to be configured. This should be done before New is
-// called.
-var Config = backend{}
+type hcConfig struct {
+	Name     string
+	User     string
+	Password string
+	Rooms    []string
+}
 
-type backend struct {
-	Name       string
-	User       string
-	Password   string
-	Rooms      []string
+type hcBackend struct {
+	config     *hcConfig
 	connection *hipchat.Client
 }
 
 // New will create a new Backend connection
-func New(c *zpam.Client) zpam.Backend {
-	client, err := hipchat.NewClient(Config.User, Config.Password, "bot")
+func newHipchat(c *zpam.Client) zpam.Backend {
+	log := zpam.Log.WithField("backend", "hipchat")
+	conf := &hcConfig{}
+	err := envconfig.InitWithPrefix(conf, "HIPCHAT")
 	if err != nil {
 		panic(err)
 	}
-	Config.connection = client
+
+	client, err := hipchat.NewClient(conf.User, conf.Password, "bot")
+	if err != nil {
+		panic(err)
+	}
+	b := &hcBackend{
+		config:     conf,
+		connection: client,
+	}
 
 	client.Status("chat")
-	for _, room := range Config.Rooms {
-		client.Join(room, Config.Name)
+	for _, room := range conf.Rooms {
+		client.Join(room, conf.Name)
+		log.WithField("room", room).Debug("joining room.")
 	}
 
 	// Start listening for incoming messages and send them to the zpam.Client
@@ -39,14 +53,20 @@ func New(c *zpam.Client) zpam.Backend {
 		for {
 			msg := <-in
 			c.Receive(&zpam.Message{
+				From: msg.From,
+				To:   strings.SplitN(msg.From, "/", 2)[0],
 				Text: msg.Body,
 			})
 		}
 	}(client.Messages())
-	Config.connection = client
-	return &Config
+
+	// Keep-alive will send a message to hipchat every 60 second. If no data
+	// has been sent the client will be disconnected after 150 seconds from the
+	// hipchat server.
+	go client.KeepAlive()
+	return b
 }
 
-func (b *backend) Send(to string, msg *zpam.Message) {
-	b.connection.Say(to, b.Name, msg.Text)
+func (b *hcBackend) Send(msg *zpam.Message) {
+	b.connection.Say(msg.To, b.config.Name, msg.Text)
 }

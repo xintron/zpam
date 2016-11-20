@@ -1,10 +1,20 @@
-hash: bf9b4630e4021eed7e1885324c4706f11e955a7338562df6efd54aeb46982fee
-updated: 2016-11-16T00:17:45.221134892+01:00
+hash: 8171a647ddb60c563d94606dc98020689f6356d4ca911b8cc3c9d94c841bdff5
+updated: 2016-11-20T18:20:31.824348655+01:00
 imports:
 - name: github.com/daneharrigan/hipchat
   version: 72d3408f603376fabb806a86b85be5099e7bbdb5
   subpackages:
   - xmpp
+- name: github.com/Sirupsen/logrus
+  version: d26492970760ca5d33129d2d799e34be5c4782eb
 - name: github.com/thoj/go-ircevent
   version: a6b1561a016c2a4aae183c3ef152c25d134c095d
+- name: github.com/vrischmann/envconfig
+  version: 757beaaeac8d14bcc7ea3f71488d65cf45cf2eff
+- name: golang.org/x/sys
+  version: b699b7032584f0953262cb2788a0ca19bb494703
+  subpackages:
+  - unix
+- name: gopkg.in/alecthomas/kingpin.v2
+  version: e9044be3ab2a8e11d4e1f418d12f0790d57e8d70
 testImports: []

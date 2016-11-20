@@ -3,3 +3,8 @@ import:
 - package: github.com/daneharrigan/hipchat
 - package: github.com/thoj/go-ircevent
   version: ^0.1.0
+- package: github.com/vrischmann/envconfig
+- package: github.com/Sirupsen/logrus
+  version: ^0.11.0
+- package: gopkg.in/alecthomas/kingpin.v2
+  version: ^2.2.3

@@ -2,8 +2,13 @@ package zpam
 
 import (
 	"errors"
-	"log"
+	"os"
+	"os/signal"
 	"strings"
+	"syscall"
+
+	"github.com/Sirupsen/logrus"
+	"github.com/vrischmann/envconfig"
 )
 
 var (
@@ -15,13 +20,17 @@ var (
 	ErrEmptyCommand = errors.New("zpam: empty command")
 	// ErrUnavailableBackend returned when the backend requested isn't available
 	ErrUnavailableBackend = errors.New("zpam: unavailable backend")
+
+	// Log to be used in backends and plugins
+	Log = logrus.StandardLogger()
 )
+
+func init() {
+	logrus.SetLevel(logrus.DebugLevel)
+}
 
 // Client takes care of commands management and backend connections.
 type Client struct {
-	Name   string
-	Prefix string
-
 	// Commands will be routed within the Client and only dispatched to
 	// handlers that have the given Client.Prefix + command-string setup
 	commands map[string]Handler
@@ -31,20 +40,42 @@ type Client struct {
 	onShutdown []func() error
 	// Active backend
 	backend Backend
+	config  *config
 }
 
-func (c *Client) Start(backend string) error {
-	init, ok := backends[backend]
+type config struct {
+	Prefix  string
+	Backend string
+}
+
+func (c *Client) Run() error {
+	conf := &config{}
+	err := envconfig.InitWithPrefix(conf, "ZP")
+	if err != nil {
+		return err
+	}
+
+	c.config = conf
+	init, ok := backends[c.config.Backend]
 	if !ok {
 		return ErrUnavailableBackend
 	}
 	c.backend = init(c)
+
+	signals := make(chan os.Signal, 1)
+	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
+	<-signals
+
 	return nil
 }
 
-func (c *Client) Send(to, text string) error {
-	c.backend.Send(to, &Message{Text: text})
+func (c *Client) Send(msg *Message) error {
+	c.backend.Send(msg)
 	return nil
+}
+
+func (c *Client) Backend() *Backend {
+	return &c.backend
 }
 
 // Receive accepts incoming Message's from backends.
@@ -70,7 +101,7 @@ func (c *Client) Receive(msg *Message) error {
 
 func (c *Client) parseCommand(msg *Message) string {
 	// Begins with the prefix character
-	if strings.HasPrefix(msg.Text, c.Prefix) {
+	if strings.HasPrefix(msg.Text, c.config.Prefix) {
 		cmd := strings.SplitN(msg.Text, " ", 2)[0][1:]
 		return cmd
 	}
@@ -99,7 +130,7 @@ func (c *Client) AddCommand(cmd string, handler Handler) error {
 	if ok {
 		return ErrExistingCommand
 	}
-	log.Printf("'%s' handler added.", cmd)
+	Log.WithField("command", cmd).Info("command handler added.")
 	c.commands[cmd] = handler
 	return nil
 }

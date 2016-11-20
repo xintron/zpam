@@ -6,7 +6,7 @@ package zpam
 // To handle graceful shutdowns the Backend can (and probably should) register
 // a shutdown function with *Client.OnShutdown()
 type Backend interface {
-	Send(to string, msg *Message)
+	Send(msg *Message)
 }
 
 type initiator func(*Client) Backend
@@ -20,4 +20,5 @@ var backends = map[string]initiator{}
 // and then control which backend to use in the configuration file.
 func RegisterBackend(name string, init initiator) {
 	backends[name] = init
+	Log.WithField("backend", name).Debug("registered backend")
 }
